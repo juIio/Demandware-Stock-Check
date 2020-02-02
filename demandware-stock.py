@@ -4,7 +4,7 @@ import time
 
 product_sku = 'FX9034'
 site = 'yeezysupply'  # Any demandware site (i.e. yeezysupply or adidas)
-target_site = 'https://www.' + site + '.com/api/products/' + product_sku + '/availability'
+target_site = 'https://www.' + str(site).lower() + '.com/api/products/' + str(product_sku).upper() + '/availability'
 timeout_retry_seconds = 180
 refresh_rate_seconds = 5
 stored_sizes = {}
