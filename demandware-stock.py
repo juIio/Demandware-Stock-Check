@@ -7,7 +7,8 @@ site = 'yeezysupply'  # Any demandware site (i.e. yeezysupply or adidas)
 target_site = 'https://www.' + str(site).lower() + '.com/api/products/' + str(product_sku).upper() + '/availability'
 timeout_retry_seconds = 180
 refresh_rate_seconds = 5
-stored_sizes = {}
+total_stock = {}
+loaded_sizes = {}
 
 
 def start_scan():
@@ -22,6 +23,7 @@ def start_scan():
             print('Session has been rate limited')
             print('=============================')
             print('\n')
+
             time.sleep(timeout_retry_seconds)
         else:
             json_message = json.loads(text)
@@ -42,21 +44,26 @@ def start_scan():
                 if status == 'IN_STOCK':
                     for variation in json_message['variation_list']:
                         size = str(variation['size'])
-                        stock_amount = str(variation['availability'])
+                        stock_amount_string = str(variation['availability'])
 
-                        if size not in stored_sizes:
+                        if size not in loaded_sizes:
                             print('   Size: ' + size)
-                            print('   Available: ' + stock_amount)
+                            print('   Available: ' + stock_amount_string)
                             print('   Status: ' + variation['availability_status'])
 
-                            stored_sizes[size] = stock_amount
+                            loaded_sizes[size] = int(stock_amount_string)
+                            total_stock[size] = int(stock_amount_string)
                         else:
-                            previous_stock = stored_sizes[size]
+                            previous_stock = loaded_sizes[size]
+                            current_stock = int(stock_amount_string)
 
-                            if previous_stock != stock_amount:
+                            if previous_stock != current_stock:
+                                if current_stock > previous_stock:
+                                    total_stock[size] = total_stock[size] + (current_stock - previous_stock)
+
                                 print('=====================================================')
                                 print('Stock change for size ' + size)
-                                print('New stock: ' + stock_amount)
+                                print('New stock: ' + stock_amount_string)
                                 print('=====================================================')
                 print('\n')
 
