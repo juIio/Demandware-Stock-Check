@@ -53,6 +53,8 @@ def start_scan():
                     exit(1)
 
                 elif status == 'IN_STOCK':
+                    live = True
+
                     for variation in json_message['variation_list']:
                         size = str(variation['size'])
                         stock_amount_string = str(variation['availability'])
