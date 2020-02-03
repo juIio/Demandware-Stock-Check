@@ -2,7 +2,7 @@ import cloudscraper
 import json
 import time
 
-product_sku = 'FX9034'
+product_sku = 'FV4440'
 site = 'yeezysupply'  # Any demandware site (i.e. yeezysupply or adidas)
 target_site = 'https://www.' + str(site).lower() + '.com/api/products/' + str(product_sku).upper() + '/availability'
 timeout_retry_seconds = 180
@@ -32,28 +32,32 @@ def start_scan():
                 print('\n')
 
             elif 'id' in json_message:
+                sku = json_message['id']
+                status = json_message['availability_status']
+
                 print('\n')
-                print('SKU: ' + json_message['id'])
-                print('Availability: ' + json_message['availability_status'])
+                print('SKU: ' + sku)
+                print('Availability: ' + status)
 
-                for variation in json_message['variation_list']:
-                    size = str(variation['size'])
-                    stock_amount = str(variation['availability'])
+                if status == 'IN_STOCK':
+                    for variation in json_message['variation_list']:
+                        size = str(variation['size'])
+                        stock_amount = str(variation['availability'])
 
-                    if size not in stored_sizes:
-                        print('   Size: ' + size)
-                        print('   Available: ' + stock_amount)
-                        print('   Status: ' + variation['availability_status'])
+                        if size not in stored_sizes:
+                            print('   Size: ' + size)
+                            print('   Available: ' + stock_amount)
+                            print('   Status: ' + variation['availability_status'])
 
-                        stored_sizes[size] = stock_amount
-                    else:
-                        previous_stock = stored_sizes[size]
+                            stored_sizes[size] = stock_amount
+                        else:
+                            previous_stock = stored_sizes[size]
 
-                        if previous_stock != stock_amount:
-                            print('=====================================================')
-                            print('Stock change for size ' + size)
-                            print('New stock: ' + stock_amount)
-                            print('=====================================================')
+                            if previous_stock != stock_amount:
+                                print('=====================================================')
+                                print('Stock change for size ' + size)
+                                print('New stock: ' + stock_amount)
+                                print('=====================================================')
                 print('\n')
 
         time.sleep(refresh_rate_seconds)
