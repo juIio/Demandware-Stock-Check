@@ -13,6 +13,7 @@ loaded_sizes = {}
 
 def start_scan():
     scraper = cloudscraper.create_scraper()
+    live = False
 
     while True:
         text = scraper.get(target_site).text
@@ -41,7 +42,17 @@ def start_scan():
                 print('SKU: ' + sku)
                 print('Availability: ' + status)
 
-                if status == 'IN_STOCK':
+                # Once it's back into preview from being live save total stock
+                if status == 'PREVIEW' and live:
+                    live = False
+
+                    with open('total_stock.json', 'w') as file:
+                        json.dump(total_stock, file, sort_keys=True, indent=4)
+
+                    print('Saved the total stock to total_stock.json file')
+                    exit(1)
+
+                elif status == 'IN_STOCK':
                     for variation in json_message['variation_list']:
                         size = str(variation['size'])
                         stock_amount_string = str(variation['availability'])
