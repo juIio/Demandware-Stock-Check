@@ -1,8 +1,9 @@
 import cloudscraper
+import atexit
 import json
 import time
 
-product_sku = 'FV4440'
+product_sku = 'FX9033'
 site = 'yeezysupply'  # Any demandware site (i.e. yeezysupply or adidas)
 target_site = 'https://www.' + str(site).lower() + '.com/api/products/' + str(product_sku).upper() + '/availability'
 timeout_retry_seconds = 180
@@ -12,6 +13,8 @@ loaded_sizes = {}
 
 
 def start_scan():
+    atexit.register(save_data)
+
     scraper = cloudscraper.create_scraper()
     live = False
 
@@ -38,7 +41,7 @@ def start_scan():
                 sku = json_message['id']
                 status = json_message['availability_status']
 
-                print('\n')
+                print(' ')
                 print('SKU: ' + sku)
                 print('Availability: ' + status)
 
@@ -46,41 +49,56 @@ def start_scan():
                 if status == 'PREVIEW' and live:
                     live = False
 
-                    with open('total_stock.json', 'w') as file:
-                        json.dump(total_stock, file, sort_keys=True, indent=4)
-
-                    print('Saved the total stock to total_stock.json file')
+                    save_data()
                     exit(1)
 
                 elif status == 'IN_STOCK':
                     live = True
+                    sizes_in_stock = ''
 
                     for variation in json_message['variation_list']:
                         size = str(variation['size'])
-                        stock_amount_string = str(variation['availability'])
+                        stock_amount_int = variation['availability']
+                        stock_amount_string = str(stock_amount_int)
+
+                        if stock_amount_int > 0:
+                            sizes_in_stock += size + ', '
 
                         if size not in loaded_sizes:
+                            print(' ')
                             print('   Size: ' + size)
                             print('   Available: ' + stock_amount_string)
                             print('   Status: ' + variation['availability_status'])
 
-                            loaded_sizes[size] = int(stock_amount_string)
-                            total_stock[size] = int(stock_amount_string)
+                            loaded_sizes[size] = stock_amount_int
+                            total_stock[size] = stock_amount_int
                         else:
                             previous_stock = loaded_sizes[size]
-                            current_stock = int(stock_amount_string)
 
-                            if previous_stock != current_stock:
-                                if current_stock > previous_stock:
-                                    total_stock[size] = total_stock[size] + (current_stock - previous_stock)
+                            if previous_stock != stock_amount_int:
+                                if stock_amount_int > previous_stock:
+                                    total_stock[size] = total_stock[size] + (stock_amount_int - previous_stock)
 
                                 print('=====================================================')
                                 print('Stock change for size ' + size)
                                 print('New stock: ' + stock_amount_string)
                                 print('=====================================================')
-                print('\n')
+
+                                loaded_sizes[size] = stock_amount_int
+                    if sizes_in_stock != '':
+                        print('Available sizes: ' + sizes_in_stock[:-2])
 
         time.sleep(refresh_rate_seconds)
+
+
+def save_data():
+    if len(total_stock) > 0:
+        with open('total_stock.json', 'w') as total_stock_file:
+            json.dump(total_stock, total_stock_file, sort_keys=True, indent=4)
+
+        print('Saved the total stock to total_stock.json file')
+    else:
+        print('No stock was loaded, no data saved')
 
 
 if __name__ == '__main__':
