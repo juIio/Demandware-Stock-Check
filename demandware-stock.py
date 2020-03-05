@@ -3,11 +3,11 @@ import atexit
 import json
 import time
 
-product_sku = 'FX9033'
+product_sku = 'FX9846'
 site = 'yeezysupply'  # Any demandware site (i.e. yeezysupply or adidas)
 target_site = 'https://www.' + str(site).lower() + '.com/api/products/' + str(product_sku).upper() + '/availability'
 timeout_retry_seconds = 180
-refresh_rate_seconds = 5
+refresh_rate_seconds = 15
 total_stock = {}
 loaded_sizes = {}
 
@@ -21,18 +21,31 @@ def start_scan():
     while True:
         text = scraper.get(target_site).text
 
-        if "<title>" in text:
+        if 'security issue' in text:
+            print('\n')
+            print('=====================================')
+            print('Session has been forbidden on this ip')
+            print('=====================================')
+            print('\n')
+
+        elif '<title>' in text:
             print('\n')
             print('=============================')
             print('Session has been rate limited')
             print('=============================')
             print('\n')
+            print(text)
 
             time.sleep(timeout_retry_seconds)
         else:
             json_message = json.loads(text)
 
             if 'message' in json_message:
+                # Once the release is done save data and exit
+                if live:
+                    live = False
+                    save_data()
+
                 print('\n')
                 print('The product for SKU ' + product_sku + ' was not found.')
                 print('\n')
@@ -45,14 +58,7 @@ def start_scan():
                 print('SKU: ' + sku)
                 print('Availability: ' + status)
 
-                # Once it's back into preview from being live save total stock
-                if status == 'PREVIEW' and live:
-                    live = False
-
-                    save_data()
-                    exit(1)
-
-                elif status == 'IN_STOCK':
+                if status == 'IN_STOCK':
                     live = True
                     sizes_in_stock = ''
 
